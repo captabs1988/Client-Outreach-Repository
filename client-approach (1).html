@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Client Approach</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{--bg:#0f1117;--surf:#171b24;--border:#252b38;--accent:#6c8aff;--accent2:#a78bfa;--text:#e2e8f0;--muted:#64748b;--green:#34d399;--gold:#f59e0b;--red:#f87171;--dot:#2a2f45;}
+body{font-family:'Segoe UI',sans-serif;background:var(--bg);color:var(--text);height:100vh;overflow:hidden;display:flex;flex-direction:column;transition:background .3s,color .3s;}
+body.light{--bg:#f5f6fa;--surf:#ffffff;--border:#e0e4ef;--accent:#3a5fd9;--accent2:#7c3aed;--text:#1a2040;--muted:#7b82a0;--green:#059669;--gold:#d97706;--red:#dc2626;--dot:#d0d5e8;}
+body.focus{--bg:#faf8f3;--surf:#ffffff;--border:#e8e0d0;--accent:#c2773a;--accent2:#9b6b2f;--text:#2c2416;--muted:#9c8c78;--green:#5a8a4a;--gold:#c2773a;--red:#c0392b;--dot:#ddd6c8;font-family:'Georgia',serif;}
+body.fresh{--bg:#edfaf5;--surf:#ffffff;--border:#b2e8d6;--accent:#0d9488;--accent2:#0891b2;--text:#0f2e2a;--muted:#5a8a7e;--green:#0d9488;--gold:#d97706;--red:#e11d48;--dot:#a7d9cc;}
+body.prestige{--bg:#0d1321;--surf:#141c2e;--border:#1e2d4a;--accent:#c9a84c;--accent2:#e8c96d;--text:#e8e0cc;--muted:#7a7260;--green:#4caf88;--gold:#c9a84c;--red:#e05555;--dot:#1a2540;}
+body.fresh .topbar{background:linear-gradient(90deg,#d0f5ea,#e0f7fa);}
+body.prestige .topbar{background:#0d1321;border-bottom:1px solid #c9a84c44;}
+body.prestige .tb-btn.primary{background:#c9a84c;border-color:#c9a84c;color:#0d1321;}
+body.prestige .logo{color:#c9a84c;}body.prestige .logo span{color:#e8c96d;}
+body.fresh .logo{color:#0d9488;}body.fresh .logo span{color:#0891b2;}
+
+.topbar{display:flex;align-items:center;gap:6px;padding:0 10px;height:46px;background:var(--surf);border-bottom:1px solid var(--border);flex-shrink:0;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;}
+.topbar::-webkit-scrollbar{display:none;}
+.logo{font-size:13px;font-weight:700;color:var(--accent);font-family:'Courier New',monospace;white-space:nowrap;flex-shrink:0;}
+.logo span{color:var(--accent2);}
+.tb-sep{width:1px;height:22px;background:var(--border);flex-shrink:0;}
+.tb-btn{padding:4px 10px;font-size:11px;border:1px solid var(--border);border-radius:6px;background:transparent;color:var(--text);cursor:pointer;white-space:nowrap;font-family:'Segoe UI',sans-serif;flex-shrink:0;}
+.tb-btn:hover{border-color:var(--accent);color:var(--accent);}
+.tb-btn.primary{background:var(--accent);border-color:var(--accent);color:#fff;}
+.tb-btn.primary:hover{opacity:.9;}
+.spacer{flex:1;min-width:4px;}
+.search-inp{padding:4px 10px;font-size:11px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text);outline:none;width:140px;font-family:'Segoe UI',sans-serif;flex-shrink:0;}
+.search-inp:focus{border-color:var(--accent);}
+.zoom-lbl{font-size:10px;color:var(--muted);font-family:'Courier New',monospace;white-space:nowrap;flex-shrink:0;}
+.toggle-wrap{display:flex;align-items:center;gap:5px;flex-shrink:0;}
+.toggle-lbl{font-size:10px;color:var(--muted);font-family:'Courier New',monospace;}
+.toggle{position:relative;width:34px;height:18px;flex-shrink:0;}
+.toggle input{opacity:0;width:0;height:0;position:absolute;}
+.toggle-slider{position:absolute;inset:0;background:var(--border);border-radius:20px;cursor:pointer;transition:background .3s;}
+.toggle-slider::before{content:'';position:absolute;width:12px;height:12px;left:3px;top:3px;background:#fff;border-radius:50%;transition:transform .3s;}
+.toggle input:checked+.toggle-slider{background:var(--accent);}
+.toggle input:checked+.toggle-slider::before{transform:translateX(16px);}
+.theme-bar{display:flex;align-items:center;gap:4px;flex-shrink:0;}
+.theme-pill{display:flex;align-items:center;gap:4px;padding:3px 9px;border-radius:20px;border:1px solid var(--border);cursor:pointer;font-size:10px;font-weight:700;color:var(--muted);background:transparent;transition:all .2s;white-space:nowrap;font-family:'Segoe UI',sans-serif;flex-shrink:0;}
+.theme-pill:hover{border-color:var(--accent);color:var(--accent);}
+.theme-pill.active{background:var(--accent);border-color:var(--accent);color:#fff;}
+.theme-pill .pip{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+
+/* MERGE BUTTON — special */
+.merge-btn{display:flex;align-items:center;gap:5px;padding:4px 12px;border-radius:6px;border:1px solid var(--gold);background:rgba(245,158,11,.1);color:var(--gold);font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;font-family:'Segoe UI',sans-serif;flex-shrink:0;transition:all .2s;}
+.merge-btn:hover{background:rgba(245,158,11,.22);}
+.merge-btn.active{background:var(--gold);color:#1a1000;}
+
+.main{display:flex;flex:1;overflow:hidden;}
+.canvas-wrap{flex:1;position:relative;overflow:hidden;cursor:default;}
+.canvas-wrap.panning{cursor:grabbing;}
+.canvas-wrap.drawing-mode{cursor:crosshair;}
+.canvas{position:absolute;top:0;left:0;transform-origin:0 0;}
+.canvas-wrap::before{content:'';position:absolute;inset:0;pointer-events:none;background-image:radial-gradient(circle,var(--dot) 1px,transparent 1px);background-size:24px 24px;z-index:0;}
+
+.zone{position:absolute;border:2px dashed;border-radius:10px;z-index:1;user-select:none;}
+.zone-label{position:absolute;top:6px;left:10px;font-size:10px;font-weight:700;font-family:'Courier New',monospace;letter-spacing:.8px;text-transform:uppercase;opacity:.85;}
+.zone-del{position:absolute;top:4px;right:6px;width:18px;height:18px;border-radius:50%;background:#ef4444;border:none;color:#fff;font-size:11px;cursor:pointer;display:none;align-items:center;justify-content:center;}
+.zone:hover .zone-del{display:flex;}
+.zone-resize{position:absolute;bottom:0;right:0;width:16px;height:16px;cursor:se-resize;z-index:5;}
+.zone-resize::after{content:'';position:absolute;bottom:3px;right:3px;width:7px;height:7px;border-right:2px solid rgba(255,255,255,.5);border-bottom:2px solid rgba(255,255,255,.5);}
+
+.msg-card{position:absolute;background:var(--surf);border:1px solid var(--border);border-radius:10px;z-index:2;display:flex;flex-direction:column;min-width:240px;min-height:100px;}
+.msg-card:hover{border-color:var(--accent);}
+.card-header{display:flex;align-items:center;gap:5px;padding:7px 9px 4px;cursor:grab;flex-shrink:0;}
+.card-header:active{cursor:grabbing;}
+.card-title-inp{flex:1;background:transparent;border:none;color:var(--text);font-size:12px;font-weight:700;font-family:'Segoe UI',sans-serif;outline:none;min-width:0;}
+.card-title-inp::placeholder{color:var(--muted);}
+.card-copy-btn{padding:3px 8px;font-size:10px;border:1px solid var(--border);border-radius:5px;background:transparent;color:var(--muted);cursor:pointer;flex-shrink:0;font-family:'Segoe UI',sans-serif;transition:all .15s;}
+.card-copy-btn:hover{border-color:var(--green);color:var(--green);}
+.card-copy-btn.flash{background:var(--green);border-color:var(--green);color:#0a1a0f;}
+.card-del-btn{width:18px;height:18px;border:none;background:transparent;color:var(--muted);cursor:pointer;font-size:14px;line-height:1;flex-shrink:0;padding:0;}
+.card-del-btn:hover{color:var(--red);}
+.card-toolbar{display:flex;align-items:center;gap:2px;padding:2px 7px;border-top:1px solid var(--border);border-bottom:1px solid var(--border);flex-shrink:0;flex-wrap:wrap;}
+.fmt-btn{width:24px;height:22px;border:none;background:transparent;color:var(--muted);cursor:pointer;font-size:12px;border-radius:4px;display:flex;align-items:center;justify-content:center;}
+.fmt-btn:hover{background:rgba(108,138,255,.15);color:var(--accent);}
+.fmt-sep{width:1px;height:16px;background:var(--border);margin:0 2px;flex-shrink:0;}
+.card-body{flex:1;padding:6px 10px;overflow-y:auto;font-size:12px;line-height:1.7;outline:none;color:var(--text);min-height:60px;}
+.card-body:empty::before{content:attr(data-placeholder);color:var(--muted);pointer-events:none;}
+.card-body table{border-collapse:collapse;width:100%;margin:4px 0;}
+.card-body table td,.card-body table th{border:1px solid var(--border);padding:4px 8px;font-size:11px;min-width:60px;}
+.card-body table th{background:rgba(108,138,255,.1);font-weight:700;}
+.card-resize{position:absolute;bottom:0;right:0;width:16px;height:16px;cursor:se-resize;z-index:10;}
+.card-resize::after{content:'';position:absolute;bottom:3px;right:3px;width:8px;height:8px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);}
+
+/* MERGE TAG CHIP inside card body */
+.merge-tag{display:inline-block;background:rgba(245,158,11,.18);color:var(--gold);border:1px solid rgba(245,158,11,.4);border-radius:4px;padding:0 5px;font-size:11px;font-weight:700;font-family:'Courier New',monospace;cursor:default;user-select:none;}
+.merge-tag.resolved{background:rgba(52,211,153,.12);color:var(--green);border-color:rgba(52,211,153,.35);}
+
+/* PREVIEW PANEL */
+.preview-panel{width:270px;min-width:270px;background:var(--surf);border-left:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;}
+.preview-header{padding:9px 12px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;flex-shrink:0;}
+.preview-header h3{font-size:11px;font-weight:700;color:var(--accent);font-family:'Courier New',monospace;flex:1;}
+.preview-badge{font-size:9px;padding:2px 8px;border-radius:10px;background:rgba(52,211,153,.15);color:var(--green);border:1px solid rgba(52,211,153,.3);display:none;}
+.preview-badge.show{display:inline-block;}
+.prev-title-bar{padding:7px 12px 2px;font-size:11px;font-weight:700;color:var(--text);border-bottom:1px solid var(--border);flex-shrink:0;}
+.preview-body{flex:1;overflow-y:auto;padding:10px 12px;font-size:11px;line-height:1.8;color:var(--text);white-space:pre-wrap;word-break:break-word;}
+.preview-body:empty::before{content:'Hit "Copy" on any card to preview it here.';color:var(--muted);font-style:italic;}
+.preview-body table{border-collapse:collapse;width:100%;margin:4px 0;}
+.preview-body table td,.preview-body table th{border:1px solid var(--border);padding:3px 6px;font-size:10px;}
+.preview-body table th{background:rgba(108,138,255,.1);font-weight:700;}
+.preview-footer{padding:7px 12px;border-top:1px solid var(--border);font-size:9px;color:var(--muted);font-family:'Courier New',monospace;flex-shrink:0;}
+
+/* MERGE PANEL — slide-in drawer */
+.merge-drawer{width:300px;min-width:300px;background:var(--surf);border-left:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;transition:width .25s,min-width .25s;overflow:hidden;}
+.merge-drawer.closed{width:0;min-width:0;border-left:none;}
+.merge-inner{width:300px;display:flex;flex-direction:column;height:100%;overflow-y:auto;}
+.md-header{padding:12px 14px 8px;border-bottom:1px solid var(--border);flex-shrink:0;}
+.md-header h3{font-size:12px;font-weight:700;color:var(--gold);font-family:'Courier New',monospace;margin-bottom:3px;}
+.md-header p{font-size:10px;color:var(--muted);line-height:1.6;}
+.md-section{padding:10px 14px;border-bottom:1px solid var(--border);}
+.md-section-title{font-size:9px;color:var(--muted);font-family:'Courier New',monospace;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;display:flex;align-items:center;gap:6px;}
+.md-section-title::after{content:'';flex:1;height:1px;background:var(--border);}
+.md-field{margin-bottom:8px;}
+.md-field label{font-size:10px;color:var(--muted);display:flex;align-items:center;gap:5px;margin-bottom:3px;font-family:'Courier New',monospace;}
+.md-tag-chip{display:inline-block;background:rgba(245,158,11,.15);color:var(--gold);border:1px solid rgba(245,158,11,.3);border-radius:3px;padding:0 4px;font-size:9px;font-weight:700;cursor:pointer;}
+.md-tag-chip:hover{background:rgba(245,158,11,.3);}
+.md-inp{width:100%;padding:6px 9px;background:var(--bg);border:1px solid var(--border);border-radius:7px;color:var(--text);font-size:11px;font-family:'Segoe UI',sans-serif;outline:none;}
+.md-inp:focus{border-color:var(--gold);}
+.md-apply-btn{width:100%;padding:8px;background:var(--gold);border:none;border-radius:8px;color:#1a1000;font-size:12px;font-weight:700;cursor:pointer;font-family:'Segoe UI',sans-serif;margin-top:4px;}
+.md-apply-btn:hover{opacity:.9;}
+.md-clear-btn{width:100%;padding:6px;background:transparent;border:1px solid var(--border);border-radius:8px;color:var(--muted);font-size:11px;cursor:pointer;font-family:'Segoe UI',sans-serif;margin-top:6px;}
+.md-clear-btn:hover{border-color:var(--red);color:var(--red);}
+.md-status{font-size:10px;color:var(--green);text-align:center;padding:6px;display:none;font-family:'Courier New',monospace;}
+.md-status.show{display:block;}
+.md-preview-wrap{padding:10px 14px;}
+.md-preview-title{font-size:9px;color:var(--muted);font-family:'Courier New',monospace;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;}
+.md-preview-list{display:flex;flex-direction:column;gap:4px;}
+.md-pv-row{display:flex;gap:6px;align-items:center;font-size:10px;}
+.md-pv-tag{background:rgba(245,158,11,.15);color:var(--gold);border:1px solid rgba(245,158,11,.3);border-radius:3px;padding:1px 5px;font-family:'Courier New',monospace;font-size:9px;font-weight:700;flex-shrink:0;}
+.md-pv-arrow{color:var(--muted);flex-shrink:0;}
+.md-pv-val{color:var(--text);font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.md-pv-empty{color:var(--muted);font-style:italic;}
+
+/* TABLE PICKER */
+.tbl-picker{position:fixed;background:var(--surf);border:1px solid var(--border);border-radius:8px;padding:8px;z-index:999;display:none;}
+.tbl-picker.open{display:block;}
+.tbl-grid{display:grid;grid-template-columns:repeat(8,18px);gap:2px;}
+.tbl-cell{width:18px;height:18px;border:1px solid var(--border);border-radius:2px;cursor:pointer;}
+.tbl-cell.hi{background:rgba(108,138,255,.3);border-color:var(--accent);}
+.tbl-hint{font-size:9px;color:var(--muted);text-align:center;margin-top:4px;font-family:'Courier New',monospace;}
+
+/* ZONE MODAL */
+.modal-back{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:500;align-items:center;justify-content:center;}
+.modal-back.open{display:flex;}
+.modal{background:var(--surf);border:1px solid var(--border);border-radius:14px;padding:20px;width:320px;display:flex;flex-direction:column;gap:11px;}
+.modal h3{font-size:14px;font-weight:700;color:var(--text);}
+.modal label{font-size:10px;color:var(--muted);font-family:'Courier New',monospace;text-transform:uppercase;letter-spacing:.8px;display:block;margin-bottom:4px;}
+.modal input{width:100%;padding:7px 10px;background:var(--bg);border:1px solid var(--border);border-radius:7px;color:var(--text);font-size:12px;font-family:'Segoe UI',sans-serif;outline:none;}
+.modal input:focus{border-color:var(--accent);}
+.modal-row{display:flex;gap:8px;justify-content:flex-end;}
+.modal-btn{padding:7px 16px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--text);font-size:12px;font-weight:600;cursor:pointer;font-family:'Segoe UI',sans-serif;}
+.modal-btn.primary{background:var(--accent);border-color:var(--accent);color:#fff;}
+.modal-btn:hover{border-color:var(--accent);}
+.zone-clr-row{display:flex;gap:5px;align-items:center;}
+.zc{width:18px;height:18px;border-radius:50%;cursor:pointer;border:2px solid transparent;}
+.zc.sel{border-color:#fff;}
+.zc:hover{transform:scale(1.2);}
+
+.draw-hint{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);background:rgba(108,138,255,.15);border:1px solid var(--accent);color:var(--accent);padding:5px 16px;border-radius:20px;font-size:11px;font-family:'Courier New',monospace;pointer-events:none;display:none;z-index:100;}
+.draw-hint.show{display:block;}
+::-webkit-scrollbar{width:4px;height:4px;}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px;}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <span class="logo">Client<span>Approach</span></span>
+  <div class="tb-sep"></div>
+  <button class="tb-btn primary" onclick="addCard()">+ Message</button>
+  <button class="tb-btn" onclick="startDrawZone()">+ Zone</button>
+  <div class="tb-sep"></div>
+  <button class="tb-btn" onclick="exportData()">↓ Export</button>
+  <button class="tb-btn" onclick="document.getElementById('imp-inp').click()">↑ Import</button>
+  <input id="imp-inp" type="file" accept=".json" style="display:none" onchange="importData(this)"/>
+  <div class="tb-sep"></div>
+  <!-- MERGE BUTTON -->
+  <button class="merge-btn" id="merge-toggle-btn" onclick="toggleMergeDrawer()">
+    ✦ Mail Merge
+  </button>
+  <div class="tb-sep"></div>
+  <input class="search-inp" type="text" placeholder="Search..." oninput="doSearch(this.value)"/>
+  <div class="spacer"></div>
+  <div class="toggle-wrap">
+    <span class="toggle-lbl">DARK</span>
+    <label class="toggle"><input type="checkbox" id="dl-toggle" onchange="toggleDarkLight(this.checked)"/><span class="toggle-slider"></span></label>
+    <span class="toggle-lbl">LIGHT</span>
+  </div>
+  <div class="tb-sep"></div>
+  <div class="theme-bar">
+    <button class="theme-pill" id="pill-focus" onclick="setTheme('focus')"><span class="pip" style="background:#c2773a"></span>Focus</button>
+    <button class="theme-pill" id="pill-fresh" onclick="setTheme('fresh')"><span class="pip" style="background:#0d9488"></span>Fresh</button>
+    <button class="theme-pill" id="pill-prestige" onclick="setTheme('prestige')"><span class="pip" style="background:#c9a84c"></span>Prestige</button>
+  </div>
+  <div class="tb-sep"></div>
+  <span class="zoom-lbl" id="zoom-lbl">100%</span>
+  <button class="tb-btn" onclick="resetView()">Reset</button>
+</div>
+
+<div class="main">
+
+  <!-- MERGE DRAWER (left side) -->
+  <div class="merge-drawer closed" id="merge-drawer">
+    <div class="merge-inner">
+      <div class="md-header">
+        <h3>✦ Mail Merge</h3>
+        <p>Fill in the fields below. Every <span style="color:var(--gold);font-weight:700">[tag]</span> in your message cards will be replaced when you hit Copy.</p>
+      </div>
+
+      <div class="md-section">
+        <div class="md-section-title">Their Details</div>
+        <div class="md-field">
+          <label><span class="md-tag-chip" onclick="insertTag('[client_name]')" title="Click to insert">[client_name]</span> &nbsp;Contact Name</label>
+          <input class="md-inp" id="m-client_name" placeholder="e.g. Priya Sharma" oninput="updateMergePreview()"/>
+        </div>
+        <div class="md-field">
+          <label><span class="md-tag-chip" onclick="insertTag('[client_post]')" title="Click to insert">[client_post]</span> &nbsp;Their Job Title</label>
+          <input class="md-inp" id="m-client_post" placeholder="e.g. Head of Operations" oninput="updateMergePreview()"/>
+        </div>
+        <div class="md-field">
+          <label><span class="md-tag-chip" onclick="insertTag('[client_company]')" title="Click to insert">[client_company]</span> &nbsp;Their Company</label>
+          <input class="md-inp" id="m-client_company" placeholder="e.g. Acme Ltd" oninput="updateMergePreview()"/>
+        </div>
+      </div>
+
+      <div class="md-section">
+        <div class="md-section-title">Your Details</div>
+        <div class="md-field">
+          <label><span class="md-tag-chip" onclick="insertTag('[my_name]')" title="Click to insert">[my_name]</span> &nbsp;Your Name</label>
+          <input class="md-inp" id="m-my_name" placeholder="e.g. Abhishek" oninput="updateMergePreview()"/>
+        </div>
+        <div class="md-field">
+          <label><span class="md-tag-chip" onclick="insertTag('[my_post]')" title="Click to insert">[my_post]</span> &nbsp;Your Role</label>
+          <input class="md-inp" id="m-my_post" placeholder="e.g. Business Development" oninput="updateMergePreview()"/>
+        </div>
+        <div class="md-field">
+          <label><span class="md-tag-chip" onclick="insertTag('[my_company]')" title="Click to insert">[my_company]</span> &nbsp;Your Company</label>
+          <input class="md-inp" id="m-my_company" placeholder="e.g. TechCorp" oninput="updateMergePreview()"/>
+        </div>
+      </div>
+
+      <div class="md-section">
+        <div class="md-section-title">Extras</div>
+        <div class="md-field">
+          <label><span class="md-tag-chip" onclick="insertTag('[date]')" title="Click to insert">[date]</span> &nbsp;Date (auto-filled)</label>
+          <input class="md-inp" id="m-date" placeholder="Leave blank = today" oninput="updateMergePreview()"/>
+        </div>
+        <div class="md-field">
+          <label><span class="md-tag-chip" onclick="insertTag('[subject]')" title="Click to insert">[subject]</span> &nbsp;Custom Subject / Topic</label>
+          <input class="md-inp" id="m-subject" placeholder="e.g. Partnership proposal" oninput="updateMergePreview()"/>
+        </div>
+      </div>
+
+      <div class="md-section">
+        <button class="md-apply-btn" onclick="applyMerge()">⚡ Apply to All Cards</button>
+        <button class="md-clear-btn" onclick="clearMerge()">✕ Clear All Fields</button>
+        <div class="md-status" id="md-status">✓ Merged into all cards!</div>
+      </div>
+
+      <div class="md-preview-wrap">
+        <div class="md-preview-title">Live tag map</div>
+        <div class="md-preview-list" id="md-pv-list"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="canvas-wrap" id="wrap">
+    <div class="canvas" id="canvas"></div>
+    <div class="draw-hint" id="draw-hint">Draw mode — drag to place zone</div>
+  </div>
+
+  <div class="preview-panel">
+    <div class="preview-header">
+      <h3>// copy preview</h3>
+      <span class="preview-badge" id="prev-badge">Copied!</span>
+    </div>
+    <div class="prev-title-bar" id="prev-title"></div>
+    <div class="preview-body" id="prev-body"></div>
+    <div class="preview-footer" id="prev-footer"></div>
+  </div>
+</div>
+
+<!-- Zone modal -->
+<div class="modal-back" id="zone-modal">
+  <div class="modal">
+    <h3>New Category Zone</h3>
+    <div><label>Zone Label</label><input id="z-name" placeholder="e.g. Cold Outreach"/></div>
+    <div>
+      <label>Zone Colour</label>
+      <div class="zone-clr-row" id="z-colors">
+        <div class="zc sel" data-c="#6c8aff" style="background:#6c8aff"></div>
+        <div class="zc" data-c="#a78bfa" style="background:#a78bfa"></div>
+        <div class="zc" data-c="#34d399" style="background:#34d399"></div>
+        <div class="zc" data-c="#f59e0b" style="background:#f59e0b"></div>
+        <div class="zc" data-c="#f87171" style="background:#f87171"></div>
+        <div class="zc" data-c="#38bdf8" style="background:#38bdf8"></div>
+        <div class="zc" data-c="#e879f9" style="background:#e879f9"></div>
+      </div>
+    </div>
+    <div class="modal-row">
+      <button class="modal-btn" onclick="closeZoneModal()">Cancel</button>
+      <button class="modal-btn primary" onclick="confirmZone()">Create Zone</button>
+    </div>
+  </div>
+</div>
+
+<!-- Table picker -->
+<div class="tbl-picker" id="tbl-picker">
+  <div class="tbl-grid" id="tbl-grid"></div>
+  <div class="tbl-hint" id="tbl-hint">0 × 0</div>
+</div>
+
+<script>
+var LS='ca_data2';
+var scale=1,offX=0,offY=0;
+var panning=false,panStart={x:0,y:0,ox:0,oy:0};
+var cards=[],zones=[];
+var drawMode=false,drawStart=null,pendingRect=null,pendingZone=null;
+var tblTarget=null,tblRows=0,tblCols=0;
+var zColor='#6c8aff';
+var mergeOpen=false;
+var lastFocusedCardId=null;
+
+// MERGE FIELDS
+var MERGE_FIELDS=['client_name','client_post','client_company','my_name','my_post','my_company','date','subject'];
+var mergeVals={};
+
+function getMergeVals(){
+  var v={};
+  MERGE_FIELDS.forEach(function(f){
+    var el=document.getElementById('m-'+f);
+    v[f]=el?el.value.trim():'';
+  });
+  if(!v['date'])v['date']=new Date().toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'});
+  return v;
+}
+
+function resolveMerge(text){
+  var v=getMergeVals();
+  return text.replace(/\[([^\]]+)\]/g,function(match,key){
+    var k=key.trim().toLowerCase().replace(/\s+/g,'_');
+    return v[k]||match;
+  });
+}
+
+function updateMergePreview(){
+  var v=getMergeVals();
+  var list=document.getElementById('md-pv-list');
+  var rows='';
+  MERGE_FIELDS.forEach(function(f){
+    var display=f==='date'&&!document.getElementById('m-date').value.trim()?new Date().toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'}):v[f];
+    rows+='<div class="md-pv-row"><span class="md-pv-tag">['+f+']</span><span class="md-pv-arrow">→</span>'+(display?'<span class="md-pv-val">'+display+'</span>':'<span class="md-pv-empty">not set</span>')+'</div>';
+  });
+  list.innerHTML=rows;
+}
+
+function applyMerge(){
+  var v=getMergeVals();
+  cards.forEach(function(c){
+    var body=document.getElementById('body-'+c.id);
+    if(!body)return;
+    // resolve in innerHTML but preserve tags structure
+    var html=body.innerHTML;
+    MERGE_FIELDS.forEach(function(f){
+      var val=v[f];if(!val)return;
+      var re=new RegExp('\\{\\{'+f+'\\}\\}','g');
+      html=html.replace(re,val);
+    });
+    body.innerHTML=html;
+    c.html=html;
+  });
+  save();
+  var st=document.getElementById('md-status');
+  st.classList.add('show');
+  setTimeout(function(){st.classList.remove('show');},2500);
+}
+
+function clearMerge(){
+  MERGE_FIELDS.forEach(function(f){var el=document.getElementById('m-'+f);if(el)el.value='';});
+  updateMergePreview();
+}
+
+function insertTag(tag){
+  if(!lastFocusedCardId)return;
+  var body=document.getElementById('body-'+lastFocusedCardId);
+  if(!body)return;body.focus();
+  document.execCommand('insertText',false,tag);
+  var c=cards.find(function(x){return x.id===lastFocusedCardId;});
+  if(c){c.html=body.innerHTML;save();}
+}
+
+function toggleMergeDrawer(){
+  mergeOpen=!mergeOpen;
+  document.getElementById('merge-drawer').classList.toggle('closed',!mergeOpen);
+  document.getElementById('merge-toggle-btn').classList.toggle('active',mergeOpen);
+  if(mergeOpen)updateMergePreview();
+}
+
+// THEME
+var currentTheme=localStorage.getItem('ca_theme2')||'dark';
+function applyTheme(t){
+  document.body.className='';
+  if(t==='light')document.body.classList.add('light');
+  else if(t!=='dark')document.body.classList.add(t);
+  document.getElementById('dl-toggle').checked=(t==='light');
+  ['focus','fresh','prestige'].forEach(function(x){var p=document.getElementById('pill-'+x);if(p)p.classList.remove('active');});
+  var ap=document.getElementById('pill-'+t);if(ap)ap.classList.add('active');
+  currentTheme=t;localStorage.setItem('ca_theme2',t);
+}
+function toggleDarkLight(isLight){applyTheme(isLight?'light':'dark');}
+function setTheme(t){applyTheme(currentTheme===t?'dark':t);}
+
+// SAVE/LOAD
+function save(){
+  try{
+    cards.forEach(function(c){
+      var el=document.getElementById('body-'+c.id);if(el)c.html=el.innerHTML;
+      var ti=document.getElementById('title-'+c.id);if(ti)c.title=ti.value;
+    });
+    localStorage.setItem(LS,JSON.stringify({cards:cards,zones:zones,scale:scale,offX:offX,offY:offY}));
+  }catch(e){}
+}
+function load(){
+  try{
+    var d=JSON.parse(localStorage.getItem(LS)||'null');if(!d)return;
+    cards=d.cards||[];zones=d.zones||[];scale=d.scale||1;offX=d.offX||0;offY=d.offY||0;
+    applyTransform();
+    zones.forEach(function(z){mountZone(z);});
+    cards.forEach(function(c){mountCard(c);});
+    updateZoom();
+  }catch(e){}
+}
+function applyTransform(){document.getElementById('canvas').style.transform='translate('+offX+'px,'+offY+'px) scale('+scale+')';}
+function updateZoom(){document.getElementById('zoom-lbl').textContent=Math.round(scale*100)+'%';}
+function resetView(){scale=1;offX=0;offY=0;applyTransform();updateZoom();}
+
+// ZONES
+function startDrawZone(){drawMode=true;document.getElementById('draw-hint').classList.add('show');document.getElementById('wrap').classList.add('drawing-mode');}
+function stopDrawMode(){drawMode=false;document.getElementById('draw-hint').classList.remove('show');document.getElementById('wrap').classList.remove('drawing-mode');if(pendingRect){pendingRect.remove();pendingRect=null;}}
+function openZoneModal(x,y,w,h){pendingZone={x:x,y:y,w:w,h:h};document.getElementById('z-name').value='';document.getElementById('zone-modal').classList.add('open');setTimeout(function(){document.getElementById('z-name').focus();},80);}
+function closeZoneModal(){document.getElementById('zone-modal').classList.remove('open');stopDrawMode();}
+document.getElementById('zone-modal').addEventListener('click',function(e){if(e.target===this)closeZoneModal();});
+function confirmZone(){
+  var name=document.getElementById('z-name').value.trim()||'Zone';
+  var z={id:'z_'+Date.now(),name:name,color:zColor,x:pendingZone.x,y:pendingZone.y,w:Math.max(160,pendingZone.w),h:Math.max(100,pendingZone.h)};
+  zones.push(z);mountZone(z);save();closeZoneModal();stopDrawMode();
+}
+document.getElementById('z-colors').querySelectorAll('.zc').forEach(function(c){
+  c.addEventListener('click',function(){document.querySelectorAll('.zc').forEach(function(x){x.classList.remove('sel');});c.classList.add('sel');zColor=c.dataset.c;});
+});
+function mountZone(z){
+  var el=document.createElement('div');el.className='zone';el.id=z.id;
+  el.style.cssText='left:'+z.x+'px;top:'+z.y+'px;width:'+z.w+'px;height:'+z.h+'px;border-color:'+z.color+';background:rgba('+hexRgb(z.color)+',0.06)';
+  var lbl=document.createElement('div');lbl.className='zone-label';lbl.textContent=z.name;lbl.style.color=z.color;el.appendChild(lbl);
+  var del=document.createElement('button');del.className='zone-del';del.textContent='×';
+  del.addEventListener('click',function(e){e.stopPropagation();if(!confirm('Delete zone?'))return;zones=zones.filter(function(x){return x.id!==z.id;});el.remove();save();});
+  el.appendChild(del);
+  var res=document.createElement('div');res.className='zone-resize';
+  res.addEventListener('mousedown',function(e){e.stopPropagation();e.preventDefault();var sx=e.clientX,sy=e.clientY,sw=z.w,sh=z.h;
+    function mv(e){z.w=Math.max(160,(sw+(e.clientX-sx)/scale));z.h=Math.max(100,(sh+(e.clientY-sy)/scale));el.style.width=z.w+'px';el.style.height=z.h+'px';}
+    function up(){save();document.removeEventListener('mousemove',mv);document.removeEventListener('mouseup',up);}
+    document.addEventListener('mousemove',mv);document.addEventListener('mouseup',up);});
+  el.appendChild(res);
+  lbl.addEventListener('mousedown',function(e){if(e.button!==0)return;e.stopPropagation();var sx=e.clientX,sy=e.clientY,ox=z.x,oy=z.y;
+    function mv(e){z.x=ox+(e.clientX-sx)/scale;z.y=oy+(e.clientY-sy)/scale;el.style.left=z.x+'px';el.style.top=z.y+'px';}
+    function up(){save();document.removeEventListener('mousemove',mv);document.removeEventListener('mouseup',up);}
+    document.addEventListener('mousemove',mv);document.addEventListener('mouseup',up);});
+  document.getElementById('canvas').appendChild(el);
+}
+function hexRgb(hex){hex=hex.replace('#','');return parseInt(hex.slice(0,2),16)+','+parseInt(hex.slice(2,4),16)+','+parseInt(hex.slice(4,6),16);}
+
+// CARDS
+function addCard(){
+  var vx=(200-offX)/scale+Math.round((Math.random()-.5)*80);
+  var vy=(120-offY)/scale+Math.round((Math.random()-.5)*60);
+  var c={id:'c_'+Date.now(),title:'New Message',html:'',x:Math.round(vx),y:Math.round(vy),w:300,h:220};
+  cards.push(c);mountCard(c);save();
+  setTimeout(function(){var ti=document.getElementById('title-'+c.id);if(ti){ti.focus();ti.select();}},80);
+}
+
+function mountCard(c){
+  var el=document.createElement('div');el.className='msg-card';el.id=c.id;
+  el.style.cssText='left:'+c.x+'px;top:'+c.y+'px;width:'+(c.w||300)+'px;height:'+(c.h||220)+'px';
+
+  // HEADER
+  var hdr=document.createElement('div');hdr.className='card-header';
+  var titleInp=document.createElement('input');titleInp.className='card-title-inp';titleInp.id='title-'+c.id;titleInp.value=c.title||'';titleInp.placeholder='Message title...';
+  titleInp.addEventListener('input',function(){c.title=this.value;save();});
+  titleInp.addEventListener('mousedown',function(e){e.stopPropagation();});
+  hdr.appendChild(titleInp);
+
+  var copyBtn=document.createElement('button');copyBtn.className='card-copy-btn';copyBtn.textContent='Copy';
+  copyBtn.addEventListener('mousedown',function(e){e.stopPropagation();});
+  copyBtn.addEventListener('click',function(e){
+    e.stopPropagation();
+    var body=document.getElementById('body-'+c.id);
+    // Resolve merge tags on the fly for clipboard — don't mutate the stored HTML
+    var resolvedText=resolveMerge(body?body.innerText:'');
+    var resolvedHTML=resolveMerge(body?body.innerHTML:'');
+    navigator.clipboard.writeText(resolvedText).then(function(){
+      copyBtn.textContent='Copied!';copyBtn.classList.add('flash');
+      setTimeout(function(){copyBtn.textContent='Copy';copyBtn.classList.remove('flash');},2000);
+      showPreview(c,resolvedText,resolvedHTML);
+    }).catch(function(){copyBtn.textContent='Error';setTimeout(function(){copyBtn.textContent='Copy';},2000);});
+  });
+  hdr.appendChild(copyBtn);
+
+  var delBtn=document.createElement('button');delBtn.className='card-del-btn';delBtn.textContent='×';
+  delBtn.addEventListener('mousedown',function(e){e.stopPropagation();});
+  delBtn.addEventListener('click',function(e){e.stopPropagation();if(!confirm('Delete "'+c.title+'"?'))return;cards=cards.filter(function(x){return x.id!==c.id;});el.remove();save();});
+  hdr.appendChild(delBtn);
+
+  hdr.addEventListener('mousedown',function(e){
+    if(e.target.tagName==='INPUT'||e.target.tagName==='BUTTON')return;
+    if(e.button!==0)return;e.stopPropagation();
+    var sx=e.clientX,sy=e.clientY,ox=c.x,oy=c.y;
+    function mv(e){c.x=Math.round(ox+(e.clientX-sx)/scale);c.y=Math.round(oy+(e.clientY-sy)/scale);el.style.left=c.x+'px';el.style.top=c.y+'px';nudgeNoOverlap(c,el);}
+    function up(){save();document.removeEventListener('mousemove',mv);document.removeEventListener('mouseup',up);}
+    document.addEventListener('mousemove',mv);document.addEventListener('mouseup',up);
+  });
+  el.appendChild(hdr);
+
+  // TOOLBAR
+  var tb=document.createElement('div');tb.className='card-toolbar';
+  var fmts=[
+    {cmd:'bold',label:'<b>B</b>'},{cmd:'italic',label:'<i>I</i>'},{cmd:'underline',label:'<u>U</u>'},{cmd:'strikeThrough',label:'<s>S</s>'},
+    'sep',{cmd:'insertUnorderedList',label:'&#8226;&#8226;'},{cmd:'insertOrderedList',label:'1.'},
+    'sep',{cmd:'justifyLeft',label:'&#8676;'},{cmd:'justifyCenter',label:'&#8644;'},
+    'sep',{cmd:'hl',label:'<mark style="background:#f59e0b;color:#000;padding:0 2px">H</mark>',title:'Highlight'},
+    'sep',{cmd:'table',label:'&#9638;',title:'Insert table'},
+    'sep',{cmd:'removeFormat',label:'&#10005;'}
+  ];
+  fmts.forEach(function(f){
+    if(f==='sep'){var s=document.createElement('div');s.className='fmt-sep';tb.appendChild(s);return;}
+    var b=document.createElement('button');b.className='fmt-btn';b.innerHTML=f.label;if(f.title)b.title=f.title;
+    b.addEventListener('mousedown',function(e){e.preventDefault();e.stopPropagation();});
+    b.addEventListener('click',function(e){
+      e.stopPropagation();var body=document.getElementById('body-'+c.id);if(!body)return;body.focus();
+      if(f.cmd==='hl')document.execCommand('backColor',false,'#f59e0b');
+      else if(f.cmd==='table')openTblPicker(c.id,b);
+      else document.execCommand(f.cmd,false,null);
+      save();
+    });
+    tb.appendChild(b);
+  });
+  el.appendChild(tb);
+
+  // BODY
+  var body=document.createElement('div');body.className='card-body';body.id='body-'+c.id;
+  body.contentEditable='true';  body.setAttribute('data-placeholder','Type your message… use [client_name] tags or click tags in the Merge panel');
+  if(c.html)body.innerHTML=c.html;
+  body.addEventListener('focus',function(){lastFocusedCardId=c.id;});
+  body.addEventListener('input',function(){c.html=body.innerHTML;save();});
+  body.addEventListener('mousedown',function(e){e.stopPropagation();});
+  body.addEventListener('keydown',function(e){e.stopPropagation();});
+  el.appendChild(body);
+
+  // RESIZE
+  var res=document.createElement('div');res.className='card-resize';
+  res.addEventListener('mousedown',function(e){
+    e.stopPropagation();e.preventDefault();var sx=e.clientX,sy=e.clientY,sw=c.w||300,sh=c.h||220;
+    function mv(e){c.w=Math.max(240,(sw+(e.clientX-sx)/scale));c.h=Math.max(100,(sh+(e.clientY-sy)/scale));el.style.width=c.w+'px';el.style.height=c.h+'px';}
+    function up(){save();document.removeEventListener('mousemove',mv);document.removeEventListener('mouseup',up);}
+    document.addEventListener('mousemove',mv);document.addEventListener('mouseup',up);
+  });
+  el.appendChild(res);
+  document.getElementById('canvas').appendChild(el);
+}
+
+function nudgeNoOverlap(moved,movedEl){
+  var attempts=0,changed=true;
+  while(changed&&attempts<20){changed=false;attempts++;
+    cards.forEach(function(other){
+      if(other.id===moved.id)return;
+      var mw=moved.w||300,mh=moved.h||220,ow=other.w||300,oh=other.h||220,pad=10;
+      if(moved.x+mw+pad<=other.x||other.x+ow+pad<=moved.x||moved.y+mh+pad<=other.y||other.y+oh+pad<=moved.y)return;
+      moved.x=other.x+ow+pad;movedEl.style.left=moved.x+'px';changed=true;
+    });
+  }
+}
+
+function showPreview(c,plain,html){
+  document.getElementById('prev-title').textContent=c.title||'(no title)';
+  document.getElementById('prev-body').innerHTML=html||plain;
+  var badge=document.getElementById('prev-badge');badge.classList.add('show');
+  document.getElementById('prev-footer').textContent='Copied at '+new Date().toLocaleTimeString();
+  setTimeout(function(){badge.classList.remove('show');},3000);
+}
+
+// TABLE PICKER
+var tg=document.getElementById('tbl-grid');
+for(var ri=1;ri<=6;ri++){for(var ci=1;ci<=8;ci++){(function(r,c){
+  var cell=document.createElement('div');cell.className='tbl-cell';cell.dataset.r=r;cell.dataset.c=c;
+  cell.addEventListener('mouseover',function(){tblRows=r;tblCols=c;document.getElementById('tbl-hint').textContent=r+' x '+c;
+    tg.querySelectorAll('.tbl-cell').forEach(function(x){x.classList.toggle('hi',parseInt(x.dataset.r)<=r&&parseInt(x.dataset.c)<=c);});});
+  cell.addEventListener('click',function(){
+    if(!tblTarget)return;var body=document.getElementById('body-'+tblTarget);if(!body)return;body.focus();
+    var html='<table><tr>';for(var i=0;i<tblCols;i++)html+='<th>Header</th>';html+='</tr>';
+    for(var row=1;row<tblRows;row++){html+='<tr>';for(var col=0;col<tblCols;col++)html+='<td>&nbsp;</td>';html+='</tr>';}
+    html+='</table><p></p>';document.execCommand('insertHTML',false,html);
+    var ci2=cards.find(function(x){return x.id===tblTarget;});if(ci2){ci2.html=body.innerHTML;save();}
+    closeTblPicker();
+  });
+  tg.appendChild(cell);
+})(ri,ci);}}
+function openTblPicker(cid,btn){tblTarget=cid;var picker=document.getElementById('tbl-picker');var rect=btn.getBoundingClientRect();picker.style.top=(rect.bottom+4)+'px';picker.style.left=rect.left+'px';picker.classList.add('open');document.addEventListener('click',closeTblPickerOutside);}
+function closeTblPicker(){document.getElementById('tbl-picker').classList.remove('open');tblTarget=null;document.removeEventListener('click',closeTblPickerOutside);}
+function closeTblPickerOutside(e){if(!document.getElementById('tbl-picker').contains(e.target))closeTblPicker();}
+
+// SEARCH
+function doSearch(q){
+  q=q.toLowerCase().trim();
+  cards.forEach(function(c){
+    var el=document.getElementById(c.id);if(!el)return;
+    if(!q){el.style.opacity='1';el.style.outline='none';return;}
+    var match=((c.title||'')+(c.html||'')).toLowerCase().indexOf(q)>-1;
+    el.style.opacity=match?'1':'0.2';el.style.outline=match?'2px solid var(--accent)':'none';
+  });
+}
+
+// CANVAS PAN + ZOOM
+var wrap=document.getElementById('wrap');
+wrap.addEventListener('mousedown',function(e){
+  if(drawMode){
+    e.preventDefault();var rect=wrap.getBoundingClientRect();
+    var sx=(e.clientX-rect.left-offX)/scale,sy=(e.clientY-rect.top-offY)/scale;drawStart={x:sx,y:sy};
+    pendingRect=document.createElement('div');
+    pendingRect.style.cssText='position:absolute;border:2px dashed '+zColor+';border-radius:8px;pointer-events:none;z-index:50;left:'+sx+'px;top:'+sy+'px;';
+    document.getElementById('canvas').appendChild(pendingRect);return;
+  }
+  if(e.target!==wrap&&e.target!==document.getElementById('canvas'))return;
+  panning=true;wrap.classList.add('panning');panStart={x:e.clientX,y:e.clientY,ox:offX,oy:offY};
+});
+document.addEventListener('mousemove',function(e){
+  if(drawMode&&drawStart&&pendingRect){
+    var rect=wrap.getBoundingClientRect();var cx=(e.clientX-rect.left-offX)/scale,cy=(e.clientY-rect.top-offY)/scale;
+    var x=Math.min(cx,drawStart.x),y=Math.min(cy,drawStart.y),w=Math.abs(cx-drawStart.x),h=Math.abs(cy-drawStart.y);
+    pendingRect.style.left=x+'px';pendingRect.style.top=y+'px';pendingRect.style.width=w+'px';pendingRect.style.height=h+'px';return;
+  }
+  if(panning){offX=panStart.ox+(e.clientX-panStart.x);offY=panStart.oy+(e.clientY-panStart.y);applyTransform();}
+});
+document.addEventListener('mouseup',function(e){
+  if(drawMode&&drawStart&&pendingRect){
+    var rect=wrap.getBoundingClientRect();var cx=(e.clientX-rect.left-offX)/scale,cy=(e.clientY-rect.top-offY)/scale;
+    var x=Math.min(cx,drawStart.x),y=Math.min(cy,drawStart.y),w=Math.abs(cx-drawStart.x),h=Math.abs(cy-drawStart.y);
+    drawStart=null;if(w<40||h<40){pendingRect.remove();pendingRect=null;stopDrawMode();return;}
+    pendingRect.remove();pendingRect=null;openZoneModal(x,y,w,h);return;
+  }
+  if(panning){panning=false;wrap.classList.remove('panning');save();}
+});
+wrap.addEventListener('wheel',function(e){e.preventDefault();scale=Math.min(3,Math.max(0.2,scale+(e.deltaY>0?-0.08:0.08)));applyTransform();updateZoom();},{passive:false});
+
+// EXPORT / IMPORT
+function exportData(){
+  cards.forEach(function(c){var el=document.getElementById('body-'+c.id);if(el)c.html=el.innerHTML;var ti=document.getElementById('title-'+c.id);if(ti)c.title=ti.value;});
+  var a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify({cards:cards,zones:zones,scale:scale,offX:offX,offY:offY,exported:new Date().toISOString()},null,2)],{type:'application/json'}));
+  a.download='ClientApproach_'+new Date().toISOString().slice(0,10)+'.json';a.click();
+}
+function importData(input){
+  var file=input.files[0];if(!file)return;
+  var reader=new FileReader();
+  reader.onload=function(e){
+    try{var data=JSON.parse(e.target.result);if(!confirm('Import replaces current canvas. Continue?'))return;
+      document.getElementById('canvas').innerHTML='';cards=data.cards||[];zones=data.zones||[];scale=data.scale||1;offX=data.offX||0;offY=data.offY||0;
+      applyTransform();updateZoom();zones.forEach(function(z){mountZone(z);});cards.forEach(function(c){mountCard(c);});save();
+    }catch(ex){alert('Invalid JSON file.');}
+  };reader.readAsText(file);input.value='';
+}
+
+// INIT
+applyTheme(currentTheme);
+load();
+if(!cards.length&&!zones.length){
+  var demo={id:'c_demo',title:'Cold Intro — LinkedIn',html:'<p>Hi <strong>[client_name]</strong>,</p><p>I came across your profile and was impressed by the work you\'re doing at <strong>[client_company]</strong>. As <strong>[client_post]</strong>, I imagine you\'re always looking for ways to streamline operations.</p><p>I\'m <strong>[my_name]</strong>, [my_post] at [my_company]. I\'d love to connect and explore a potential collaboration.</p><p>Best regards,<br/>[my_name]</p>',x:60,y:60,w:340,h:280};
+  cards.push(demo);mountCard(demo);save();
+}
+updateMergePreview();
+</script>
+</body>
+</html>
